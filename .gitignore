@@ -1,0 +1,23 @@
+# ─── Environment ───────────────────────────────
+.env
+.env.encrypted
+*.local
+
+# ─── WordPress (do not track, downloaded via setup.sh) ───
+public_html
+
+# ─── Logs ────────────────────────────────────
+logs/
+*.log
+
+# ─── Docker ─────────────────────────────────
+# (volumes are on host, not in repo)
+
+# ─── OS / Editor ────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~

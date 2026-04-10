@@ -1,0 +1,64 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "${{ vars.WORKING_DIRECTORY }}/**"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      WORKING_DIRECTORY: ${{ vars.WORKING_DIRECTORY }}
+      FTP_LOCAL_DIR: "./${{ vars.WORKING_DIRECTORY }}/"
+      FTP_SERVER_DIR: "/${{ vars.FTP_SERVER_DIR }}/"
+      FTP_PORT: ${{ vars.FTP_PORT }}
+      FTP_PROTOCOL: ${{ vars.FTP_PROTOCOL }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Composer dependencies
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+        run: composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Install npm dependencies
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+        run: npm ci
+
+      - name: Build with npm
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+        run: npm run prod
+
+      - name: Deploy to FTP server
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          port: ${{ env.FTP_PORT }}
+          protocol: ${{ env.FTP_PROTOCOL }}
+          local-dir: ${{ env.FTP_LOCAL_DIR }}
+          server-dir: ${{ env.FTP_SERVER_DIR }}
+          exclude: |
+            lab/
+            src/**
+            node_modules/**
+            .nvmrc
+            composer.json
+            composer.lock
+            package.json
+            package-lock.json
+            postcss.config.js
+            README.md
+            tailwind.config.js
+            webpack.config.js

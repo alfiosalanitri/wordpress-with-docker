@@ -1,0 +1,72 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    name: Create ZIP Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup version release (date + short sha)
+        id: version
+        run: |
+          VERSION="$(date +'%Y.%m.%d')-$(echo $GITHUB_SHA | cut -c1-7)"
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "TAG=release-$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create ZIP archive of the project
+        run: |
+          ZIP_NAME="wordpress-docker-${{ steps.version.outputs.VERSION }}.zip"
+
+          zip -r "$ZIP_NAME" . \
+            --exclude ".git/*" \
+            --exclude ".github/workflows/release.yml" \
+            --exclude "public_html/*" \
+            --exclude "logs/*" \
+            --exclude ".env" \
+            --exclude "README.md" \
+            --exclude "*.zip"
+
+          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
+
+      - name: Create Git tag
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "${{ steps.version.outputs.TAG }}"
+          git push origin "${{ steps.version.outputs.TAG }}"
+
+      - name: Pubblih the Release on GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.TAG }}
+          name: "Release ${{ steps.version.outputs.VERSION }}"
+          body: |
+            ## How to use
+
+            1. Download the attached `.zip` file
+            2. Extract the folder
+            3. Rename it with the project name e.g. `new_project`
+            4. Create the project repository
+            5. Run the setup script:
+               ```bash
+               chmod +x setup.sh
+               ./setup.sh
+               ```
+            6. Add the project repository and run the first commit
+
+            ---
+            **Commit:** `${{ github.sha }}`
+            **Date:** `${{ github.event.head_commit.timestamp }}`
+          files: ${{ env.ZIP_NAME }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
