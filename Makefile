@@ -110,11 +110,11 @@ clean: ## Stop containers and remove logs
 	$(COMPOSE) down
 	rm -f logs/*.log
 
-nuke: ## ⚠️  Remove containers, volumes (db) and logs — DESTRUCTIVE
+nuke: ## ⚠️  Remove containers, volumes (db), built PHP image, and logs — DESTRUCTIVE
 	@echo ""
 	@echo "  ⚠️  You are about to delete all containers AND the database volume."
 	@read -p "  Are you sure? Type 'yes' to confirm: " confirm; \
 	[ "$$confirm" = "yes" ] || (echo "Cancelled." && exit 1)
-	$(COMPOSE) down -v
+	$(COMPOSE) down -v --rmi local
 	rm -f logs/*.log
 	@echo "Cleanup completed."
