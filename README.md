@@ -207,7 +207,7 @@ find public_html/ -type d -exec chmod 755 {} \;
 find public_html/ -type f -exec chmod 644 {} \;
 ```
 
----
+--- 
 
 ## Notes
 
@@ -215,3 +215,17 @@ find public_html/ -type f -exec chmod 644 {} \;
 - Nginx logs are available in the `logs/` folder of the host.
 - The `db_data` volume persists data between restarts; to reset it use `make nuke`.
 - `xmlrpc.php` and PHP execution inside `wp-content/uploads/` are blocked at Nginx level.
+
+---
+
+> [!CAUTION]
+> **This stack is for local development only — do not use in production.**
+>
+> This setup prioritizes developer convenience over security and stability.
+> It may include:
+> - Hardcoded credentials or insecure defaults
+> - Debug modes and verbose logging enabled
+> - No rate limiting, HTTPS, or production-level hardening
+>
+> Before deploying to any production or staging environment, replace this stack
+> with a properly configured, security-reviewed setup.
