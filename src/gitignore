@@ -3,6 +3,8 @@
 debug.log
 *.jpa
 /*
+public_html/wp-content/languages/wpml/*
+public_html/wp-content/uploads/cache/wpml/*
 !.github
 !public_html
 !.gitignore
@@ -16,5 +18,3 @@ debug.log
 !.env.encrypted
 !docker-compose.yml
 !Makefile
-public_html/wp-content/languages/wpml/*
-public_html/wp-content/uploads/cache/wpml/*

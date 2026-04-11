@@ -153,7 +153,7 @@ fi
 #  Create necessary directories
 # ─────────────────────────────────────────────
 info "Creating necessary directories..."
-mkdir -p public_html logs
+mkdir -p public_html logs .github/workflows
 
 # ─────────────────────────────────────────────
 #  Download WordPress
@@ -195,13 +195,29 @@ if [[ "$DO_WORDPRESS" == "true" ]]; then
 fi
 
 # ─────────────────────────────────────────────
-#  Rename .gitignore-production → .gitignore
+#  Move ./src/gitignore → .gitignore
 # ─────────────────────────────────────────────
-if [[ -f .gitignore-production ]]; then
-  mv .gitignore-production .gitignore
-  success ".gitignore-production renamed to .gitignore."
+if [[ -f ./src/gitignore ]]; then
+  mv ./src/gitignore .gitignore
+  success ".src/gitignore moved to .gitignore"
 else
-  warn "File .gitignore-production not found, skipping rename."
+  warn "File ./src/gitignore not found, skipping."
+fi
+
+# ─────────────────────────────────────────────
+#  Move deploy.yml action
+# ─────────────────────────────────────────────
+if [[ -f .github/workflows/deploy.yml ]]; then
+  info "deploy.yml file already copied, skipping."
+else
+  info "Edit and move the deploy.yml file..."
+  read -rp "$(echo -e "${YELLOW}Type the full path to your theme without init and end slash${RESET} [public_html/wp-content/themes/your-theme]: ")" WORKING_DIRECTORY
+  WORKING_DIRECTORY="${WORKING_DIRECTORY:-public_html/wp-content/themes/your-theme}"
+  sed -i "s|directory_to_deploy_change_by_setup_sh|${WORKING_DIRECTORY}|" ./src/deploy.yml
+  mv ./src/deploy.yml .github/workflows/deploy.yml
+  success "File deploy.yml moved."
+  rm -r src
+  success "src directory deleted."
 fi
 
 # ─────────────────────────────────────────────

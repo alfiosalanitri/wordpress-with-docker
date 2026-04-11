@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - "${{ vars.WORKING_DIRECTORY }}/**"
+      - "/directory_to_deploy_change_by_setup_sh/**"
 
 jobs:
   deploy:

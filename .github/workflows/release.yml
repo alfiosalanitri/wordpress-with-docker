@@ -26,8 +26,7 @@ jobs:
           ZIP_NAME="wordpress-docker-${{ steps.version.outputs.VERSION }}.zip"
 
           zip -r "$ZIP_NAME" . \
-            --exclude ".git/*" \
-            --exclude ".github/workflows/release.yml" \
+            --exclude ".git*" \
             --exclude "public_html/*" \
             --exclude "logs/*" \
             --exclude ".env" \
