@@ -211,7 +211,7 @@ if [[ -f .github/workflows/deploy.yml ]]; then
   info "deploy.yml file already copied, skipping."
 else
   info "Edit and move the deploy.yml file..."
-  read -rp "$(echo -e "${YELLOW}Type the full path to your theme without init and end slash${RESET} [public_html/wp-content/themes/your-theme]: ")" WORKING_DIRECTORY
+  read -rp "$(echo -e "${YELLOW}Path to your theme folder to sync via ftp (no leading or trailing slashes)${RESET} [public_html/wp-content/themes/your-theme]: ")" WORKING_DIRECTORY
   WORKING_DIRECTORY="${WORKING_DIRECTORY:-public_html/wp-content/themes/your-theme}"
   sed -i "s|directory_to_deploy_change_by_setup_sh|${WORKING_DIRECTORY}|" ./src/deploy.yml
   mv ./src/deploy.yml .github/workflows/deploy.yml

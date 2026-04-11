@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - "/directory_to_deploy_change_by_setup_sh/**"
+      - "directory_to_deploy_change_by_setup_sh/**"
 
 jobs:
   deploy:
