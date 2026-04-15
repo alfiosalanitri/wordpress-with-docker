@@ -24,14 +24,14 @@ help: ## Show this help message
 # ─── Containers ────────────────────────────────────────────────────────────────
 up: ## Start containers in background
 	$(COMPOSE) up -d
- @echo "Open browser at: http://localhost:$(NGINX_PORT)"
+	@echo "Open browser at: http://localhost:$(NGINX_PORT)"
 
 down: ## Stop and remove containers
 	$(COMPOSE) down
 
 restart: ## Restart all containers
 	$(COMPOSE) restart
- @echo "Open browser at: http://localhost:$(NGINX_PORT)"
+	@echo "Open browser at: http://localhost:$(NGINX_PORT)"
 
 ps: ## Show container status
 	$(COMPOSE) ps
