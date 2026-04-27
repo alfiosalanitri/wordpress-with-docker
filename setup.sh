@@ -283,8 +283,8 @@ The \`.github/workflows/deploy.yml\` file handles automatic FTP deployment on pu
 | Secret   | \`FTP_SERVER\`        | FTP server hostname          |
 | Secret   | \`FTP_USERNAME\`      | FTP username                 |
 | Secret   | \`FTP_PASSWORD\`      | FTP password                 |
-| Variable | \`WORKING_DIRECTORY\` | Local theme path             |
-| Variable | \`FTP_SERVER_DIR\`    | Remote path on server        |
+| Variable | \`WORKING_DIRECTORY\` | Local theme path (e.g. `public_html/wp-content/themes/your-theme`)            |
+| Variable | \`FTP_SERVER_DIR\`    | Remote theme path on server (e.g. `wp-content/themes/your-theme`)        |
 | Variable | \`FTP_PORT\`          | FTP port (e.g. \`21\`)         |
 | Variable | \`FTP_PROTOCOL\`      | Protocol (\`ftp\` or \`ftps\`) |
 READMEEOF
