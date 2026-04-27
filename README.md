@@ -194,7 +194,7 @@ To configure in the **Settings → Secrets and variables** of the production rep
 | Secret    | `FTP_USERNAME`     | FTP username                       |
 | Secret    | `FTP_PASSWORD`     | FTP password                       |
 | Variable  | `WORKING_DIRECTORY`| Local theme path (e.g. `public_html/wp-content/themes/your-theme`) |
-| Variable  | `FTP_SERVER_DIR`   | Remote theme path on server (e.g. wp-content/themes/your-theme)              |
+| Variable  | `FTP_SERVER_DIR`   | Remote theme path on server (e.g. `wp-content/themes/your-theme`)              |
 | Variable  | `FTP_PORT`         | FTP port (e.g. `21`)               |
 | Variable  | `FTP_PROTOCOL`     | Protocol (e.g. `ftp` or `ftps`)    |
 
