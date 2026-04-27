@@ -50,7 +50,7 @@ jobs:
           local-dir: ${{ env.FTP_LOCAL_DIR }}
           server-dir: ${{ env.FTP_SERVER_DIR }}
           exclude: |
-            lab/
+            lab/**
             src/**
             node_modules/**
             .nvmrc
