@@ -34,6 +34,10 @@ RUN apt-get update && apt-get install -y \
 # Enable recommended extensions
 RUN docker-php-ext-enable mysqli pdo_mysql opcache
 
+# Install WP-CLI
+RUN curl -o /usr/local/bin/wp -L https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
+    && chmod +x /usr/local/bin/wp
+
 ARG UID
 ARG GID
 
