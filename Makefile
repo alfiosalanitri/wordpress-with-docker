@@ -1,5 +1,6 @@
 .PHONY: help up down restart logs shell-php shell-db shell-nginx status ps \
-		env-encrypt env-decrypt wp-cli db-backup db-restore clean nuke
+		env-encrypt env-decrypt wp-cli db-backup db-restore clean nuke \
+		prod-up prod-down prod-restart prod-logs prod-ps
 
 SHELL := /bin/bash
 
@@ -120,3 +121,23 @@ nuke: ## ⚠️  Remove containers, volumes (db), built PHP image, and logs — 
 	$(COMPOSE) down -v --rmi local
 	rm -f logs/*.log
 	@echo "Cleanup completed."
+
+# ─── Production (Cloudflare Tunnel) ──────────────────────────────────────────
+PROD_COMPOSE := $(COMPOSE) -f docker-compose.yml -f docker-compose.prod.yml
+
+prod-up: ## Start the production stack (hardened Nginx + Cloudflare Tunnel)
+	@test -n "$(CLOUDFLARE_TUNNEL_TOKEN)" || (echo "Set CLOUDFLARE_TUNNEL_TOKEN in .env first — see the production-release skill." && exit 1)
+	$(PROD_COMPOSE) up -d
+	@echo "Production stack started. Check: make prod-logs"
+
+prod-down: ## Stop the production stack
+	$(PROD_COMPOSE) down
+
+prod-restart: ## Restart the production stack
+	$(PROD_COMPOSE) restart
+
+prod-logs: ## Follow logs of the production stack (incl. cloudflared)
+	$(PROD_COMPOSE) logs -f
+
+prod-ps: ## Show production stack container status
+	$(PROD_COMPOSE) ps

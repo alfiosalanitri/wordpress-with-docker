@@ -251,6 +251,9 @@ make db-backup    # perform dump of ${PROJECT_NAME} database
 make db-restore FILE=${PROJECT_NAME}.sql
 make env-encrypt  # Encrypt .env file with passphrase to upload to repository
 make env-decrypt  # extract encrypted .env file from repository
+make prod-up      # start production stack (hardened Nginx + Cloudflare Tunnel)
+make prod-down    # stop production stack
+make prod-logs    # follow production stack logs
 \`\`\`
 
 
@@ -273,8 +276,10 @@ Defined in the \`.env\` file (generated from \`.env.example\` via setup.sh).
 | \`MYSQL_DATABASE\`      | Database name                     |
 | \`MYSQL_USER\`          | Database user                     |
 | \`MYSQL_PASSWORD\`      | Database user password            |
+| \`CLOUDFLARE_TUNNEL_TOKEN\` | Production only — Cloudflare Tunnel token |
+| \`PRODUCTION_DOMAIN\`   | Production only — public hostname routed through the tunnel |
 
-## Deploy
+## Deploy (FTP theme sync)
 
 The \`.github/workflows/deploy.yml\` file handles automatic FTP deployment on push to \`main\`. Configure in the **Settings → Secrets and variables** of the repo:
 
@@ -287,6 +292,18 @@ The \`.github/workflows/deploy.yml\` file handles automatic FTP deployment on pu
 | Variable | \`FTP_SERVER_DIR\`    | Remote theme path on server (e.g. \`wp-content/themes/your-theme\`)        |
 | Variable | \`FTP_PORT\`          | FTP port (e.g. \`21\`)         |
 | Variable | \`FTP_PROTOCOL\`      | Protocol (\`ftp\` or \`ftps\`) |
+
+## Self-Hosted Production Release (Cloudflare Tunnel)
+
+A separate, unrelated path from the FTP deploy above: run this same Docker stack in production,
+fronted by a Cloudflare Zero Trust Tunnel that reverse-proxies to Nginx — no open ports, no local
+TLS certs needed.
+
+1. Create a tunnel in the [Cloudflare Zero Trust dashboard](https://one.dash.cloudflare.com/) with a Public Hostname pointing to \`http://nginx:80\`
+2. Set \`CLOUDFLARE_TUNNEL_TOKEN\` and \`PRODUCTION_DOMAIN\` in \`.env\`
+3. Run \`make prod-up\`
+
+See the \`production-release\` Claude Code skill (\`.claude/skills/production-release/SKILL.md\`) for full details and recommended \`wp-config.php\` hardening.
 READMEEOF
 success "README.md generated."
 

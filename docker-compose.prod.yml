@@ -1,0 +1,22 @@
+# Production override — always used together with docker-compose.yml, e.g.:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# (or simply `make prod-up`). Adds the Cloudflare Zero Trust Tunnel and swaps
+# nginx to its hardened production config. See the production-release skill
+# for the one-time Cloudflare dashboard setup this depends on.
+
+services:
+  nginx:
+    volumes:
+      - ./public_html:/var/www/html:rw
+      - ./nginx/production.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./logs:/var/log/nginx
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: ${PROJECT_NAME}-cloudflared
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - nginx
