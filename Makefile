@@ -1,5 +1,6 @@
 .PHONY: help up down restart logs shell-php shell-db shell-nginx status ps \
 		env-encrypt env-decrypt wp-cli db-backup db-restore clean nuke \
+		backup backup-db backup-files backup-restore backup-list \
 		prod-up prod-down prod-restart prod-logs prod-ps
 
 SHELL := /bin/bash
@@ -108,6 +109,24 @@ db-restore: ## Restore a dump (e.g.: make db-restore FILE=backups/dump.sql)
 		-u $(MYSQL_USER) -p$(MYSQL_PASSWORD) $(MYSQL_DATABASE) < $(FILE)
 	@echo "Database restored from $(FILE)."
 
+# ─── Backup ───────────────────────────────────────────────────────────────────
+backup: ## Full backup (db + files) via scripts/backup.sh, into BACKUP_PATH
+	./scripts/backup.sh all
+
+backup-db: ## Database-only backup via scripts/backup.sh
+	./scripts/backup.sh db
+
+backup-files: ## Files-only backup (public_html/) via scripts/backup.sh
+	./scripts/backup.sh files
+
+backup-restore: ## ⚠️  Restore db + files from a backup set — DESTRUCTIVE (make backup-restore FILE_DB=... FILE_FILES=...)
+	@test -n "$(FILE_DB)" || (echo "Specify FILE_DB=<path.sql.gz>" && exit 1)
+	@test -n "$(FILE_FILES)" || (echo "Specify FILE_FILES=<path.tar.gz>" && exit 1)
+	./scripts/backup-restore.sh "$(FILE_DB)" "$(FILE_FILES)"
+
+backup-list: ## List backups available in BACKUP_PATH
+	@ls -lh $(or $(BACKUP_PATH),./backups) 2>/dev/null || echo "No backups found."
+
 # ─── Cleanup ──────────────────────────────────────────────────────────────────
 clean: ## Stop containers and remove logs
 	$(COMPOSE) down
@@ -123,21 +142,22 @@ nuke: ## ⚠️  Remove containers, volumes (db), built PHP image, and logs — 
 	@echo "Cleanup completed."
 
 # ─── Production (Cloudflare Tunnel) ──────────────────────────────────────────
-PROD_COMPOSE := $(COMPOSE) -f docker-compose.yml -f docker-compose.prod.yml
+PROD_COMPOSE   := $(COMPOSE) -f docker-compose.yml -f docker-compose.prod.yml
+BACKUP_PROFILE := $(if $(filter container,$(BACKUP_SCHEDULER)),--profile backup,)
 
 prod-up: ## Start the production stack (hardened Nginx + Cloudflare Tunnel)
 	@test -n "$(CLOUDFLARE_TUNNEL_TOKEN)" || (echo "Set CLOUDFLARE_TUNNEL_TOKEN in .env first — see the production-release skill." && exit 1)
-	$(PROD_COMPOSE) up -d
+	$(PROD_COMPOSE) $(BACKUP_PROFILE) up -d
 	@echo "Production stack started. Check: make prod-logs"
 
 prod-down: ## Stop the production stack
-	$(PROD_COMPOSE) down
+	$(PROD_COMPOSE) $(BACKUP_PROFILE) down
 
 prod-restart: ## Restart the production stack
-	$(PROD_COMPOSE) restart
+	$(PROD_COMPOSE) $(BACKUP_PROFILE) restart
 
 prod-logs: ## Follow logs of the production stack (incl. cloudflared)
-	$(PROD_COMPOSE) logs -f
+	$(PROD_COMPOSE) $(BACKUP_PROFILE) logs -f
 
 prod-ps: ## Show production stack container status
-	$(PROD_COMPOSE) ps
+	$(PROD_COMPOSE) $(BACKUP_PROFILE) ps

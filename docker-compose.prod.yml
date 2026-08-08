@@ -2,7 +2,10 @@
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 # (or simply `make prod-up`). Adds the Cloudflare Zero Trust Tunnel and swaps
 # nginx to its hardened production config. See the production-release skill
-# for the one-time Cloudflare dashboard setup this depends on.
+# for the one-time Cloudflare dashboard setup this depends on. Also adds an
+# optional `backup` service (profile "backup", enabled only when
+# BACKUP_SCHEDULER=container — see the backup skill) that runs scripts/backup.sh
+# on a cron schedule inside the container.
 
 services:
   nginx:
@@ -20,3 +23,27 @@ services:
       - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
     depends_on:
       - nginx
+
+  backup:
+    build:
+      context: ./backup
+    container_name: ${PROJECT_NAME}-backup
+    restart: unless-stopped
+    profiles:
+      - backup
+    environment:
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - BACKUP_PATH=/backups
+      - BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS}
+      - BACKUP_SCHEDULE_CRON=${BACKUP_SCHEDULE_CRON}
+      - BACKUP_EXCLUDE_PATHS=${BACKUP_EXCLUDE_PATHS}
+      - BACKUP_REMOTE_PATH=${BACKUP_REMOTE_PATH}
+      - BACKUP_REMOTE_SYNC_CMD=${BACKUP_REMOTE_SYNC_CMD}
+    volumes:
+      - ./public_html:/var/www/html:ro
+      - ./scripts:/scripts:ro
+      - ./backups:/backups
+    depends_on:
+      - db

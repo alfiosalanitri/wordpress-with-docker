@@ -153,7 +153,7 @@ fi
 #  Create necessary directories
 # ─────────────────────────────────────────────
 info "Creating necessary directories..."
-mkdir -p public_html logs .github/workflows
+mkdir -p public_html logs backups .github/workflows
 
 # ─────────────────────────────────────────────
 #  Download WordPress
@@ -251,6 +251,11 @@ make db-backup    # perform dump of ${PROJECT_NAME} database
 make db-restore FILE=${PROJECT_NAME}.sql
 make env-encrypt  # Encrypt .env file with passphrase to upload to repository
 make env-decrypt  # extract encrypted .env file from repository
+make backup                 # full backup (db + files) into BACKUP_PATH
+make backup-db               # database-only backup
+make backup-files            # files-only backup (public_html/)
+make backup-restore FILE_DB=... FILE_FILES=...  # restore db + files
+make backup-list             # list backups available in BACKUP_PATH
 make prod-up      # start production stack (hardened Nginx + Cloudflare Tunnel)
 make prod-down    # stop production stack
 make prod-logs    # follow production stack logs
@@ -278,6 +283,21 @@ Defined in the \`.env\` file (generated from \`.env.example\` via setup.sh).
 | \`MYSQL_PASSWORD\`      | Database user password            |
 | \`CLOUDFLARE_TUNNEL_TOKEN\` | Production only — Cloudflare Tunnel token |
 | \`PRODUCTION_DOMAIN\`   | Production only — public hostname routed through the tunnel |
+| \`BACKUP_PATH\`         | Destination directory for backups |
+| \`BACKUP_RETENTION_DAYS\` | Days to keep backups before deletion |
+| \`BACKUP_SCHEDULER\`    | \`host\` (cron on the host) or \`container\` (service in docker-compose.prod.yml) |
+| \`BACKUP_SCHEDULE_CRON\` | Cron schedule used by the \`container\` scheduler |
+| \`BACKUP_EXCLUDE_PATHS\` | Paths under public_html/ excluded from the files archive |
+| \`BACKUP_REMOTE_PATH\`  | Optional remote destination for a post-backup sync |
+| \`BACKUP_REMOTE_SYNC_CMD\` | Sync command run as \`<cmd> <BACKUP_PATH> <BACKUP_REMOTE_PATH>\` |
+
+## Backup & Restore
+
+\`scripts/backup.sh\` dumps the database and archives \`public_html/\` into timestamped files in
+\`BACKUP_PATH\`, with retention and an optional remote sync — see \`make help\` for the
+\`backup*\` commands and the **backup** Claude Code skill
+(\`.claude/skills/backup/SKILL.md\`) for full details, including the two scheduling modes
+(\`BACKUP_SCHEDULER=host\` via cron, or \`BACKUP_SCHEDULER=container\` via \`make prod-up\`).
 
 ## Deploy (FTP theme sync)
 

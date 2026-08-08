@@ -13,6 +13,9 @@ logs/
 # ─── Docker ─────────────────────────────────
 # (volumes are on host, not in repo)
 
+# ─── Backups ────────────────────────────────
+backups/
+
 # ─── OS / Editor ────────────────────────────
 .DS_Store
 Thumbs.db
