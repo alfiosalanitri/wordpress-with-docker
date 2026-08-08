@@ -303,7 +303,22 @@ TLS certs needed.
 2. Set \`CLOUDFLARE_TUNNEL_TOKEN\` and \`PRODUCTION_DOMAIN\` in \`.env\`
 3. Run \`make prod-up\`
 
-See the \`production-release\` Claude Code skill (\`.claude/skills/production-release/SKILL.md\`) for full details and recommended \`wp-config.php\` hardening.
+### Required wp-config.php hardening
+
+Cloudflare terminates TLS at its edge, so \`public_html/wp-config.php\` needs to trust the forwarded scheme and be locked down before going live. Add this before the \`/* That's all, stop editing! */\` line:
+
+\`\`\`php
+define( 'WP_DEBUG', false );
+define( 'DISALLOW_FILE_EDIT', true );
+define( 'FORCE_SSL_ADMIN', true );
+if ( isset( \$_SERVER['HTTP_X_FORWARDED_PROTO'] ) && \$_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' ) {
+    \$_SERVER['HTTPS'] = 'on';
+}
+\`\`\`
+
+Without the \`HTTP_X_FORWARDED_PROTO\` check, WordPress sees plain HTTP from \`nginx\` (TLS already ended at Cloudflare) and generates insecure URLs / redirect loops with \`FORCE_SSL_ADMIN\` on.
+
+See the \`production-release\` Claude Code skill (\`.claude/skills/production-release/SKILL.md\`) for full details.
 READMEEOF
 success "README.md generated."
 

@@ -240,6 +240,24 @@ This uses `docker-compose.prod.yml` as an override on top of `docker-compose.yml
 rate-limited `wp-login.php`, real client IP trusted from `cloudflared`). Manage it with
 `make prod-down` / `make prod-restart` / `make prod-logs` / `make prod-ps`.
 
+### Required `wp-config.php` hardening
+
+Cloudflare terminates TLS at its edge, so `public_html/wp-config.php` needs to trust the
+forwarded scheme and be locked down before going live. Add this before the
+`/* That's all, stop editing! */` line:
+
+```php
+define( 'WP_DEBUG', false );
+define( 'DISALLOW_FILE_EDIT', true );
+define( 'FORCE_SSL_ADMIN', true );
+if ( isset( $_SERVER['HTTP_X_FORWARDED_PROTO'] ) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' ) {
+    $_SERVER['HTTPS'] = 'on';
+}
+```
+
+Without the `HTTP_X_FORWARDED_PROTO` check, WordPress sees plain HTTP from `nginx` (TLS already
+ended at Cloudflare) and generates insecure URLs / redirect loops with `FORCE_SSL_ADMIN` on.
+
 ---
 
 ## Permissions
