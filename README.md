@@ -4,6 +4,21 @@ Local development stack for WordPress based on **Nginx + PHP-FPM + MariaDB**, or
 
 ---
 
+## Going to production — pick ONE path
+
+This template supports two **independent** production paths. They are not combined — pick the one that matches your hosting.
+
+| | FTP Theme Deploy | Self-Hosted (Cloudflare Tunnel) |
+|---|---|---|
+| What ships | Only the theme + a DB dump, in a **separate, leaner repo** | This entire repo, running as a live Docker stack |
+| Where it runs | Existing classic/shared FTP hosting | Any server you control (VPS, homelab, NAS…) that can run Docker |
+| Who serves traffic | Your hosting provider (its own TLS/webserver) | The `nginx`/`php`/`db` stack here, fronted by a `cloudflared` tunnel — no open ports, TLS at Cloudflare's edge |
+| Details | ["Production Repo Workflow"](#production-repo-workflow-path-1) below | ["Self-Hosted Production Release"](#self-hosted-production-release-cloudflare-tunnel-path-2) below |
+
+If you're not sure: use **FTP Theme Deploy** if you already have shared hosting that only accepts FTP uploads; use **Self-Hosted (Cloudflare Tunnel)** if you want to run this same Docker stack live yourself.
+
+---
+
 ## Project Structure
 
 ```
@@ -180,7 +195,7 @@ make backup-list            # List backups available in BACKUP_PATH
 make clean          # Stop containers and remove logs
 make nuke           # ⚠️  Remove containers, volumes and logs
 
-# Production (Cloudflare Tunnel) — see "Self-Hosted Production Release" below
+# Production (Cloudflare Tunnel) — see "Self-Hosted Production Release" (path 2) below
 make prod-up        # Start the production stack (hardened Nginx + Cloudflare Tunnel)
 make prod-down      # Stop the production stack
 make prod-restart   # Restart the production stack
@@ -190,7 +205,7 @@ make prod-ps        # Production stack container status
 
 ---
 
-## Production Repo Workflow
+## Production Repo Workflow (path 1)
 
 After setup, the developer initializes a **separate repo** that contains only the files to version and deploy:
 
@@ -232,7 +247,7 @@ To configure in the **Settings → Secrets and variables** of the production rep
 
 ---
 
-## Self-Hosted Production Release (Cloudflare Tunnel)
+## Self-Hosted Production Release (Cloudflare Tunnel, path 2)
 
 This is a **separate, unrelated path** from the FTP "Production Repo Workflow" above: instead of
 deploying a theme to shared hosting, this runs the *same* Docker stack from this repo in

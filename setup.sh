@@ -299,7 +299,13 @@ Defined in the \`.env\` file (generated from \`.env.example\` via setup.sh).
 (\`.claude/skills/backup/SKILL.md\`) for full details, including the two scheduling modes
 (\`BACKUP_SCHEDULER=host\` via cron, or \`BACKUP_SCHEDULER=container\` via \`make prod-up\`).
 
-## Deploy (FTP theme sync)
+## Going to production — pick ONE path
+
+Two independent options below — don't combine them. Use **FTP theme sync** if you already have
+classic shared FTP hosting; use **Self-Hosted (Cloudflare Tunnel)** if you want to run this same
+Docker stack live yourself.
+
+## Deploy (FTP theme sync, path 1)
 
 The \`.github/workflows/deploy.yml\` file handles automatic FTP deployment on push to \`main\`. Configure in the **Settings → Secrets and variables** of the repo:
 
@@ -313,7 +319,7 @@ The \`.github/workflows/deploy.yml\` file handles automatic FTP deployment on pu
 | Variable | \`FTP_PORT\`          | FTP port (e.g. \`21\`)         |
 | Variable | \`FTP_PROTOCOL\`      | Protocol (\`ftp\` or \`ftps\`) |
 
-## Self-Hosted Production Release (Cloudflare Tunnel)
+## Self-Hosted Production Release (Cloudflare Tunnel, path 2)
 
 A separate, unrelated path from the FTP deploy above: run this same Docker stack in production,
 fronted by a Cloudflare Zero Trust Tunnel that reverse-proxies to Nginx — no open ports, no local

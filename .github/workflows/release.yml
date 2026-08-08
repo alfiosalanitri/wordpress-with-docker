@@ -61,6 +61,19 @@ jobs:
                ```
             6. Add the project repository and run the first commit
 
+            ## Going to production — pick ONE path
+
+            These two paths are independent, don't combine them:
+
+            - **FTP theme deploy** (classic shared hosting): push only the theme + a DB dump to a
+              **separate, leaner repo** — `setup.sh` already generated `.github/workflows/deploy.yml`
+              for it. See "Production Repo Workflow" in the README.
+            - **Self-hosted via Cloudflare Tunnel** (this same Docker stack, running live): set
+              `CLOUDFLARE_TUNNEL_TOKEN` and `PRODUCTION_DOMAIN` in `.env` on the server that will
+              serve traffic, then run `make prod-up`. No separate repo, no FTP. See
+              "Self-Hosted Production Release (Cloudflare Tunnel)" in the README, or the
+              `production-release` Claude Code skill for full step-by-step instructions.
+
             ---
             **Commit:** `${{ github.sha }}`
             **Date:** `${{ github.event.head_commit.timestamp }}`
