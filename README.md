@@ -1,6 +1,6 @@
 # WordPress + Docker
 
-Local development stack for WordPress based on **Nginx + PHP-FPM + MariaDB**, orchestrated with Docker Compose.
+A Docker Compose stack for WordPress — Nginx + PHP-FPM + MariaDB — built for local development and ready to run in production as a self-hosted deployment (Cloudflare Tunnel, hardened config, automated backups).
 
 ---
 
