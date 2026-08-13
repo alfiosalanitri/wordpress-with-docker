@@ -42,7 +42,7 @@ Bind mounts: `./public_html` → `/var/www/html` (nginx + php), `./logs` → ngi
 │   ├── Dockerfile
 │   └── php.ini
 ├── backup/
-│   ├── Dockerfile                # alpine + mariadb-client + rsync, runs scripts/backup.sh on a cron loop
+│   ├── Dockerfile                # alpine + mariadb-client + rsync + rclone, runs scripts/backup.sh on a cron loop
 │   └── entrypoint.sh
 ├── scripts/
 │   ├── backup.sh                  # dump db + tar public_html/, apply retention, optional remote sync
@@ -57,7 +57,8 @@ Bind mounts: `./public_html` → `/var/www/html` (nginx + php), `./logs` → ngi
 └── .claude/skills/
     ├── make-commands/            # how to use the Makefile
     ├── production-release/       # how to go live via Cloudflare Tunnel
-    └── backup/                   # how to back up/restore/schedule db + files
+    ├── backup/                   # how to back up/restore/schedule db + files (reference)
+    └── backup-setup/             # guided wizard to configure backups + S3/S3-compatible storage
 ```
 
 ## Environment variables (`.env`, generated from `.env.example`)
@@ -75,7 +76,9 @@ Bind mounts: `./public_html` → `/var/www/html` (nginx + php), `./logs` → ngi
 | `BACKUP_SCHEDULER` | `host` (cron entry on the host runs `scripts/backup.sh`) or `container` (starts the `backup` service from `docker-compose.prod.yml`) |
 | `BACKUP_SCHEDULE_CRON` | Cron expression used only when `BACKUP_SCHEDULER=container` |
 | `BACKUP_EXCLUDE_PATHS` | Space-separated paths under `public_html/` to exclude from the files archive |
-| `BACKUP_REMOTE_PATH` / `BACKUP_REMOTE_SYNC_CMD` | Optional remote sync destination + command run after each backup (default `rsync -az`, swappable for `rclone sync`) |
+| `BACKUP_REMOTE_PATH` / `BACKUP_REMOTE_SYNC_CMD` | Optional remote sync destination + command run after each backup (default `rsync -az`, swappable for `rclone sync` — use `s3:bucket/prefix` for S3/S3-compatible) |
+| `BACKUP_REMOTE_FETCH_CMD` | Non-destructive copy command used by `make backup-restore ... REMOTE=1` to pull a backup down from `BACKUP_REMOTE_PATH` (default `rclone copy`) |
+| `RCLONE_CONFIG_S3_*` | rclone remote `s3` credentials/config (type, provider, access key, secret, region, endpoint) — see the **backup-setup** skill for provider-specific setup |
 
 ## Local dev workflow
 
@@ -115,6 +118,14 @@ Scheduling is controlled by `BACKUP_SCHEDULER`:
 - `container` — starts the `backup` service defined in `docker-compose.prod.yml` (profile
   `backup`, only via `make prod-up`), which loops `scripts/backup.sh` on `BACKUP_SCHEDULE_CRON`
   inside a container built from `backup/Dockerfile`.
+
+`BACKUP_REMOTE_PATH`/`BACKUP_REMOTE_SYNC_CMD` are provider-agnostic (`<cmd> <BACKUP_PATH>
+<BACKUP_REMOTE_PATH>`); `rclone` is bundled in `backup/Dockerfile` specifically so S3 and
+S3-compatible providers (AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi) work out of the box.
+`make backup-restore ... REMOTE=1` fetches a backup from `BACKUP_REMOTE_PATH` before restoring, and
+`make backup-list-remote` lists what's there. For a guided, provider-specific setup (creating the
+bucket, user/API key, and access credentials) use the **backup-setup** skill; for ongoing
+operation/reference use the **backup** skill.
 
 Full setup and examples: the **backup** skill.
 
