@@ -46,14 +46,17 @@ FILE_DB="${1:?Usage: $0 [--remote] <db_backup.sql.gz> <files_backup.tar.gz>}"
 FILE_FILES="${2:?Usage: $0 [--remote] <db_backup.sql.gz> <files_backup.tar.gz>}"
 
 fetch_remote() {
-  local name="$1" cmd_bin
+  local name="$1"
   [[ -n "$BACKUP_REMOTE_PATH" ]] || error "BACKUP_REMOTE_PATH is not set — cannot fetch with --remote."
-  cmd_bin="$(awk '{print $1}' <<< "$BACKUP_REMOTE_FETCH_CMD")"
-  command -v "$cmd_bin" >/dev/null 2>&1 \
-    || error "BACKUP_REMOTE_FETCH_CMD tool '$cmd_bin' not found in PATH."
   mkdir -p "$BACKUP_PATH"
-  info "Fetching $name from $BACKUP_REMOTE_PATH..."
-  $BACKUP_REMOTE_FETCH_CMD "$BACKUP_REMOTE_PATH/$name" "$BACKUP_PATH/"
+  info "Fetching $name from $BACKUP_REMOTE_PATH (via the backup container)..."
+  # Runs inside the backup container (which already bundles rclone/rsync and gets
+  # RCLONE_CONFIG_S3_* from docker-compose.prod.yml) so the host never needs these
+  # tools installed — only the --profile backup service's ./backups bind mount is used,
+  # so this assumes the default BACKUP_PATH=./backups.
+  (cd "$REPO_ROOT" && docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile backup \
+    run --rm --no-deps --entrypoint sh backup -c "$BACKUP_REMOTE_FETCH_CMD '$BACKUP_REMOTE_PATH/$name' /backups/") \
+    || error "Fetch failed for $name."
 }
 
 if [[ "$REMOTE" == "true" ]]; then

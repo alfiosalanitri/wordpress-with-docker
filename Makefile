@@ -127,9 +127,9 @@ backup-restore: ## ⚠️  Restore db + files — DESTRUCTIVE (make backup-resto
 backup-list: ## List backups available in BACKUP_PATH
 	@ls -lh $(or $(BACKUP_PATH),./backups) 2>/dev/null || echo "No backups found."
 
-backup-list-remote: ## List backups available in BACKUP_REMOTE_PATH (requires rclone remote configured)
+backup-list-remote: ## List backups available in BACKUP_REMOTE_PATH (runs rclone inside the backup container — no host install needed)
 	@test -n "$(BACKUP_REMOTE_PATH)" || (echo "BACKUP_REMOTE_PATH is not set." && exit 1)
-	rclone lsf "$(BACKUP_REMOTE_PATH)"
+	$(PROD_COMPOSE) --profile backup run --rm --no-deps --entrypoint rclone backup lsf "$(BACKUP_REMOTE_PATH)"
 
 # ─── Cleanup ──────────────────────────────────────────────────────────────────
 clean: ## Stop containers and remove logs

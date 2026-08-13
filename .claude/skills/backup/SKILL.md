@@ -73,7 +73,7 @@ Once configured:
 
 ```bash
 make backup                 # backs up locally, then rclone syncs BACKUP_PATH to BACKUP_REMOTE_PATH
-make backup-list-remote     # rclone lsf $BACKUP_REMOTE_PATH — see what's in the bucket
+make backup-list-remote     # rclone lsf $BACKUP_REMOTE_PATH inside the backup container — see what's in the bucket
 make backup-restore FILE_DB=db_<ts>.sql.gz FILE_FILES=files_<ts>.tar.gz REMOTE=1
                              # fetches both files from BACKUP_REMOTE_PATH into BACKUP_PATH, then restores as usual
 ```
@@ -84,10 +84,16 @@ Notes:
   on the bucket itself, or point `BACKUP_REMOTE_SYNC_CMD` at a command that mirrors deletions
   (rclone's `sync` already does this: files deleted locally by retention are also removed from
   the remote on the next sync).
-- On the host, credentials just need to be present in `.env` — `scripts/backup.sh` and
-  `scripts/backup-restore.sh` both export every `.env` line (so `RCLONE_CONFIG_S3_*` reaches
-  `rclone` the same way `MYSQL_PASSWORD` does today). In the container scheduler, the same vars
-  are passed explicitly in `docker-compose.prod.yml`'s `backup` service `environment:` block.
+- `make backup-list-remote` and the `REMOTE=1` fetch step of `make backup-restore` both run
+  `rclone`/`BACKUP_REMOTE_FETCH_CMD` **inside the `backup` container** (`docker compose ...
+  --profile backup run --rm --no-deps ... backup ...`), regardless of `BACKUP_SCHEDULER` — so
+  neither ever needs `rclone`/`rsync` installed on the host, only the `RCLONE_CONFIG_S3_*`
+  credentials present in `.env` (docker-compose.prod.yml passes them into the container). This
+  is separate from `scripts/backup.sh`'s own post-backup sync (`BACKUP_REMOTE_SYNC_CMD`), which
+  still runs on the host when `BACKUP_SCHEDULER=host` and does need the tool in the host `PATH`.
+- Because the fetch/list container always mounts the fixed `./backups` host directory (same as
+  the scheduler container in `docker-compose.prod.yml`), `REMOTE=1` restores assume the default
+  `BACKUP_PATH=./backups`.
 
 ## 4. Scheduling — `BACKUP_SCHEDULER=host`
 

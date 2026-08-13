@@ -28,6 +28,11 @@ This matters before anything else because it decides *where* any remote-storage 
   via `make prod-up`) runs on a schedule inside its own container, which already has `rclone`
   built in. Only available on the production stack.
 
+This choice only affects the *scheduled* backup's post-backup sync. `make backup-list-remote` and
+the `REMOTE=1` fetch step of `make backup-restore` always run `rclone`/`BACKUP_REMOTE_FETCH_CMD`
+inside the `backup` container (a one-off `docker compose ... --profile backup run`), so those two
+never need `rclone` installed on the host, whichever scheduler is chosen.
+
 Write the choice: `BACKUP_SCHEDULER=host` or `BACKUP_SCHEDULER=container`. If `container`, also ask
 for the cron schedule (default `0 3 * * *`) and write `BACKUP_SCHEDULE_CRON`.
 
