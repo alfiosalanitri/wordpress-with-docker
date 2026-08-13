@@ -255,8 +255,9 @@ make env-decrypt  # extract encrypted .env file from repository
 make backup                 # full backup (db + files) into BACKUP_PATH
 make backup-db               # database-only backup
 make backup-files            # files-only backup (public_html/)
-make backup-restore FILE_DB=... FILE_FILES=...  # restore db + files
+make backup-restore FILE_DB=... FILE_FILES=... [REMOTE=1]  # restore db + files (REMOTE=1 fetches from BACKUP_REMOTE_PATH first)
 make backup-list             # list backups available in BACKUP_PATH
+make backup-list-remote      # list backups available in BACKUP_REMOTE_PATH
 make prod-up      # start production stack (hardened Nginx + Cloudflare Tunnel)
 make prod-down    # stop production stack
 make prod-logs    # follow production stack logs
@@ -289,8 +290,10 @@ Defined in the \`.env\` file (generated from \`.env.example\` via setup.sh).
 | \`BACKUP_SCHEDULER\`    | \`host\` (cron on the host) or \`container\` (service in docker-compose.prod.yml) |
 | \`BACKUP_SCHEDULE_CRON\` | Cron schedule used by the \`container\` scheduler |
 | \`BACKUP_EXCLUDE_PATHS\` | Paths under public_html/ excluded from the files archive |
-| \`BACKUP_REMOTE_PATH\`  | Optional remote destination for a post-backup sync |
+| \`BACKUP_REMOTE_PATH\`  | Optional remote destination for a post-backup sync — use \`s3:<bucket>/<prefix>\` for S3 |
 | \`BACKUP_REMOTE_SYNC_CMD\` | Sync command run as \`<cmd> <BACKUP_PATH> <BACKUP_REMOTE_PATH>\` |
+| \`BACKUP_REMOTE_FETCH_CMD\` | Non-destructive copy command used by \`make backup-restore ... REMOTE=1\` |
+| \`RCLONE_CONFIG_S3_*\`  | rclone remote \`s3\` credentials/config for S3 / S3-compatible storage |
 
 ## Backup & Restore
 
@@ -298,7 +301,8 @@ Defined in the \`.env\` file (generated from \`.env.example\` via setup.sh).
 \`BACKUP_PATH\`, with retention and an optional remote sync — see \`make help\` for the
 \`backup*\` commands and the **backup** Claude Code skill
 (\`.claude/skills/backup/SKILL.md\`) for full details, including the two scheduling modes
-(\`BACKUP_SCHEDULER=host\` via cron, or \`BACKUP_SCHEDULER=container\` via \`make prod-up\`).
+(\`BACKUP_SCHEDULER=host\` via cron, or \`BACKUP_SCHEDULER=container\` via \`make prod-up\`) and
+S3 / S3-compatible remote storage (\`BACKUP_REMOTE_PATH=s3:...\` via the bundled \`rclone\`).
 
 ## Going to production — pick ONE path
 

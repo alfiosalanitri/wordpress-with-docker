@@ -1,6 +1,6 @@
 .PHONY: help up down restart logs shell-php shell-db shell-nginx status ps \
 		env-encrypt env-decrypt wp-cli db-backup db-restore clean nuke \
-		backup backup-db backup-files backup-restore backup-list \
+		backup backup-db backup-files backup-restore backup-list backup-list-remote \
 		prod-up prod-down prod-restart prod-logs prod-ps
 
 SHELL := /bin/bash
@@ -119,13 +119,17 @@ backup-db: ## Database-only backup via scripts/backup.sh
 backup-files: ## Files-only backup (public_html/) via scripts/backup.sh
 	./scripts/backup.sh files
 
-backup-restore: ## ⚠️  Restore db + files from a backup set — DESTRUCTIVE (make backup-restore FILE_DB=... FILE_FILES=...)
+backup-restore: ## ⚠️  Restore db + files — DESTRUCTIVE (make backup-restore FILE_DB=... FILE_FILES=... [REMOTE=1] — REMOTE=1 fetches both from BACKUP_REMOTE_PATH first)
 	@test -n "$(FILE_DB)" || (echo "Specify FILE_DB=<path.sql.gz>" && exit 1)
 	@test -n "$(FILE_FILES)" || (echo "Specify FILE_FILES=<path.tar.gz>" && exit 1)
-	./scripts/backup-restore.sh "$(FILE_DB)" "$(FILE_FILES)"
+	./scripts/backup-restore.sh $(if $(REMOTE),--remote,) "$(FILE_DB)" "$(FILE_FILES)"
 
 backup-list: ## List backups available in BACKUP_PATH
 	@ls -lh $(or $(BACKUP_PATH),./backups) 2>/dev/null || echo "No backups found."
+
+backup-list-remote: ## List backups available in BACKUP_REMOTE_PATH (requires rclone remote configured)
+	@test -n "$(BACKUP_REMOTE_PATH)" || (echo "BACKUP_REMOTE_PATH is not set." && exit 1)
+	rclone lsf "$(BACKUP_REMOTE_PATH)"
 
 # ─── Cleanup ──────────────────────────────────────────────────────────────────
 clean: ## Stop containers and remove logs

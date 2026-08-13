@@ -28,12 +28,40 @@ if [[ -f "$REPO_ROOT/.env" ]]; then
   done < "$REPO_ROOT/.env"
 fi
 
+BACKUP_PATH="${BACKUP_PATH:-./backups}"
+BACKUP_REMOTE_PATH="${BACKUP_REMOTE_PATH:-}"
+BACKUP_REMOTE_FETCH_CMD="${BACKUP_REMOTE_FETCH_CMD:-rclone copy}"
+
 : "${MYSQL_USER:?MYSQL_USER not set — check .env}"
 : "${MYSQL_PASSWORD:?MYSQL_PASSWORD not set — check .env}"
 : "${MYSQL_DATABASE:?MYSQL_DATABASE not set — check .env}"
 
-FILE_DB="${1:?Usage: $0 <db_backup.sql.gz> <files_backup.tar.gz>}"
-FILE_FILES="${2:?Usage: $0 <db_backup.sql.gz> <files_backup.tar.gz>}"
+REMOTE=false
+if [[ "${1:-}" == "--remote" ]]; then
+  REMOTE=true
+  shift
+fi
+
+FILE_DB="${1:?Usage: $0 [--remote] <db_backup.sql.gz> <files_backup.tar.gz>}"
+FILE_FILES="${2:?Usage: $0 [--remote] <db_backup.sql.gz> <files_backup.tar.gz>}"
+
+fetch_remote() {
+  local name="$1" cmd_bin
+  [[ -n "$BACKUP_REMOTE_PATH" ]] || error "BACKUP_REMOTE_PATH is not set — cannot fetch with --remote."
+  cmd_bin="$(awk '{print $1}' <<< "$BACKUP_REMOTE_FETCH_CMD")"
+  command -v "$cmd_bin" >/dev/null 2>&1 \
+    || error "BACKUP_REMOTE_FETCH_CMD tool '$cmd_bin' not found in PATH."
+  mkdir -p "$BACKUP_PATH"
+  info "Fetching $name from $BACKUP_REMOTE_PATH..."
+  $BACKUP_REMOTE_FETCH_CMD "$BACKUP_REMOTE_PATH/$name" "$BACKUP_PATH/"
+}
+
+if [[ "$REMOTE" == "true" ]]; then
+  fetch_remote "$(basename "$FILE_DB")"
+  fetch_remote "$(basename "$FILE_FILES")"
+  FILE_DB="$BACKUP_PATH/$(basename "$FILE_DB")"
+  FILE_FILES="$BACKUP_PATH/$(basename "$FILE_FILES")"
+fi
 
 [[ -f "$FILE_DB" ]] || error "Database backup not found: $FILE_DB"
 [[ -f "$FILE_FILES" ]] || error "Files backup not found: $FILE_FILES"

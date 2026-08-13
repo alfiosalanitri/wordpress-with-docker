@@ -34,8 +34,62 @@ wire into cron or CI and check the exit status.
 | `BACKUP_EXCLUDE_PATHS` | Space-separated paths relative to `public_html/` to exclude from the tar archive, e.g. `wp-content/cache` |
 | `BACKUP_REMOTE_PATH` | If set, `scripts/backup.sh` syncs `BACKUP_PATH` here after a successful backup |
 | `BACKUP_REMOTE_SYNC_CMD` | The sync tool + flags, invoked as `$BACKUP_REMOTE_SYNC_CMD <BACKUP_PATH> <BACKUP_REMOTE_PATH>`. Default `rsync -az`. Not hardcoded to a provider — set it to `rclone sync` (or anything else that takes `<src> <dest>`) to use a different backend. The script checks the command exists in `PATH` before running and errors clearly if not. |
+| `BACKUP_REMOTE_FETCH_CMD` | Used only by `make backup-restore ... REMOTE=1` to pull a backup down from `BACKUP_REMOTE_PATH` before restoring. Default `rclone copy`. Must stay a **non-destructive copy** (never a sync/mirror command), since it writes into `BACKUP_PATH`. |
+| `RCLONE_CONFIG_S3_*` | Credentials/config for an rclone remote named `s3`, used when `BACKUP_REMOTE_PATH` starts with `s3:` — see "Remote storage — S3 and S3-compatible" below. |
 
-## 3. Scheduling — `BACKUP_SCHEDULER=host`
+## 3. Remote storage — S3 and S3-compatible
+
+`rclone` is installed in the `backup` container image (`backup/Dockerfile`) and is the recommended
+tool for `BACKUP_REMOTE_SYNC_CMD`/`BACKUP_REMOTE_FETCH_CMD` when backing up to S3 or an
+S3-compatible bucket (Cloudflare R2, Backblaze B2, MinIO, Wasabi, etc.) — no other code changes
+are needed, it plugs straight into the existing generic remote-sync hook.
+
+Configure an rclone remote named `s3` via env vars in `.env` (rclone's `RCLONE_CONFIG_<name>_<key>`
+convention — no `rclone config` wizard or mounted config file needed):
+
+```
+BACKUP_REMOTE_PATH=s3:my-bucket/my-project
+BACKUP_REMOTE_SYNC_CMD=rclone sync
+BACKUP_REMOTE_FETCH_CMD=rclone copy
+
+# Plain AWS S3
+RCLONE_CONFIG_S3_TYPE=s3
+RCLONE_CONFIG_S3_PROVIDER=AWS
+RCLONE_CONFIG_S3_ACCESS_KEY_ID=<key>
+RCLONE_CONFIG_S3_SECRET_ACCESS_KEY=<secret>
+RCLONE_CONFIG_S3_REGION=eu-west-1
+RCLONE_CONFIG_S3_ENDPOINT=
+```
+
+For an S3-compatible endpoint (e.g. Cloudflare R2), set the provider and endpoint instead of a
+region:
+
+```
+RCLONE_CONFIG_S3_PROVIDER=Cloudflare
+RCLONE_CONFIG_S3_ENDPOINT=https://<account_id>.r2.cloudflarestorage.com
+```
+
+Once configured:
+
+```bash
+make backup                 # backs up locally, then rclone syncs BACKUP_PATH to BACKUP_REMOTE_PATH
+make backup-list-remote     # rclone lsf $BACKUP_REMOTE_PATH — see what's in the bucket
+make backup-restore FILE_DB=db_<ts>.sql.gz FILE_FILES=files_<ts>.tar.gz REMOTE=1
+                             # fetches both files from BACKUP_REMOTE_PATH into BACKUP_PATH, then restores as usual
+```
+
+Notes:
+- Remote-side retention isn't managed by these scripts — `apply_retention` only prunes
+  `BACKUP_PATH` locally. If you want old backups pruned from the bucket too, set a lifecycle rule
+  on the bucket itself, or point `BACKUP_REMOTE_SYNC_CMD` at a command that mirrors deletions
+  (rclone's `sync` already does this: files deleted locally by retention are also removed from
+  the remote on the next sync).
+- On the host, credentials just need to be present in `.env` — `scripts/backup.sh` and
+  `scripts/backup-restore.sh` both export every `.env` line (so `RCLONE_CONFIG_S3_*` reaches
+  `rclone` the same way `MYSQL_PASSWORD` does today). In the container scheduler, the same vars
+  are passed explicitly in `docker-compose.prod.yml`'s `backup` service `environment:` block.
+
+## 4. Scheduling — `BACKUP_SCHEDULER=host`
 
 Runs backups from a cron entry on the host machine. Neither `setup.sh` nor the Makefile ever
 touch the system crontab automatically — add the entry yourself:
@@ -51,7 +105,7 @@ crontab -e
 `scripts/backup.sh` sources `.env` itself when run directly (not just through `make`), so a bare
 cron entry like the one above works without going through Make.
 
-## 4. Scheduling — `BACKUP_SCHEDULER=container`
+## 5. Scheduling — `BACKUP_SCHEDULER=container`
 
 Runs backups from a dedicated `backup` service defined in `docker-compose.prod.yml`, active only
 on the production stack (not the local dev `docker-compose.yml`). Set in `.env`:
@@ -72,8 +126,8 @@ The `backup` service is behind a Compose profile (`profiles: [backup]`); the Mak
 `BACKUP_SCHEDULER=host` the container is never built or started. When active:
 
 - Image: `backup/Dockerfile` — Alpine + `mariadb-client` (for `mariadb-dump`/`mariadb`) + `rsync`
-  (default `BACKUP_REMOTE_SYNC_CMD` tool). Swap `rsync` for `rclone` in the Dockerfile if you'd
-  rather use that.
+  (default `BACKUP_REMOTE_SYNC_CMD` tool) + `rclone` (for S3/S3-compatible remotes — see
+  "Remote storage — S3 and S3-compatible" above).
 - `backup/entrypoint.sh` writes `BACKUP_SCHEDULE_CRON` into `/etc/crontabs/root` and runs
   `crond -f` — Alpine's built-in busybox cron, no extra scheduler daemon.
 - Mounts: `public_html/` **read-only**, `scripts/` read-only, `backups/` read-write. Only
@@ -85,7 +139,7 @@ The `backup` service is behind a Compose profile (`profiles: [backup]`); the Mak
 - Check it's running: `make prod-ps` (service `Up`), `make prod-logs` (crond startup + backup
   runs logged to stdout).
 
-## 5. Restore
+## 6. Restore
 
 ```bash
 make backup-restore FILE_DB=backups/db_20260101_030000.sql.gz FILE_FILES=backups/files_20260101_030000.tar.gz
@@ -96,3 +150,11 @@ make backup-restore FILE_DB=backups/db_20260101_030000.sql.gz FILE_FILES=backups
 proceed (same confirmation pattern as `make nuke`) — anything else cancels. It always runs on the
 host via `docker compose exec` (never inside the scheduling container). After a restore, run
 `make wp-permissions` if file ownership looks wrong.
+
+Add `REMOTE=1` to fetch both files from `BACKUP_REMOTE_PATH` into `BACKUP_PATH` first (via
+`BACKUP_REMOTE_FETCH_CMD`) before restoring — pass bare filenames (not paths) for `FILE_DB`/
+`FILE_FILES` in that case, e.g.:
+
+```bash
+make backup-restore FILE_DB=db_20260101_030000.sql.gz FILE_FILES=files_20260101_030000.tar.gz REMOTE=1
+```
