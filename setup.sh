@@ -249,6 +249,7 @@ make shell-php    # open shell in PHP container
 make shell-db     # open MariaDB client
 make db-backup    # perform dump of ${PROJECT_NAME} database
 make db-restore FILE=${PROJECT_NAME}.sql
+make wp-permissions  # restore correct ownership/permissions on public_html/
 make env-encrypt  # Encrypt .env file with passphrase to upload to repository
 make env-decrypt  # extract encrypted .env file from repository
 make backup                 # full backup (db + files) into BACKUP_PATH

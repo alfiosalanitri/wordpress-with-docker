@@ -186,6 +186,7 @@ make shell-nginx    # Shell in Nginx container
 
 # WordPress
 make wp-cli CMD="plugin list"  # Run WP-CLI commands
+make wp-permissions  # Restore correct ownership/permissions on public_html/
 
 # Database
 make db-backup      # Dump in root (ready for commit in production repo)
@@ -351,7 +352,7 @@ explicit `yes` confirmation before doing anything, listing both files first.
 
 ## Permissions
 
-The files in `public_html/` are owned by the host user, which is the user running PHP-FPM in the container. If after manual operations the permissions are incorrect:
+The files in `public_html/` are owned by the host user, which is the user running PHP-FPM in the container. If after manual operations the permissions are incorrect, run `make wp-permissions`, or do it manually:
 
 ```bash
 sudo chown -R $USER:$USER public_html/
