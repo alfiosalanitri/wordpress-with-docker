@@ -1,48 +1,37 @@
-FROM php:8.3-fpm
+FROM php:8.4-fpm
 
-# Install necessary system packages
-RUN apt-get update && apt-get install -y \
-    libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
-    libonig-dev \
-    libzip-dev \
-    libxml2-dev \
-    libicu-dev \
-    imagemagick \
-    libmagickwand-dev \
-    unzip \
-    git \
-    curl \
-    && pecl install imagick \
-    && docker-php-ext-enable imagick \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) \
-       gd \
-       intl \
-       exif \
-       mbstring \
-       mysqli \
-       opcache \
-       pdo \
-       pdo_mysql \
-       zip \
-       bcmath \
-       xml \
+COPY --from=mlocati/php-extension-installer:2 /usr/bin/install-php-extensions /usr/local/bin/
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        unzip \
+        git \
+        curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Enable recommended extensions
-RUN docker-php-ext-enable mysqli pdo_mysql opcache
+RUN install-php-extensions \
+        gd \
+        intl \
+        exif \
+        mysqli \
+        opcache \
+        pdo_mysql \
+        zip \
+        bcmath
 
-# Install WP-CLI
-RUN curl -o /usr/local/bin/wp -L https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
+# Imagick built from GitHub sources (PECL is unreliable)
+RUN install-php-extensions Imagick/imagick@3.8.0
+
+# Install WP-CLI (pinned release, verified against its published SHA-512)
+ARG WP_CLI_VERSION=2.12.0
+ARG WP_CLI_SHA512=be928f6b8ca1e8dfb9d2f4b75a13aa4aee0896f8a9a0a1c45cd5d2c98605e6172e6d014dda2e27f88c98befc16c040cbb2bd1bfa121510ea5cdf5f6a30fe8832
+RUN curl -fsSL -o /usr/local/bin/wp \
+        https://github.com/wp-cli/wp-cli/releases/download/v${WP_CLI_VERSION}/wp-cli-${WP_CLI_VERSION}.phar \
+    && echo "${WP_CLI_SHA512}  /usr/local/bin/wp" | sha512sum -c - \
     && chmod +x /usr/local/bin/wp
 
 ARG UID
 ARG GID
 
-# Set working directory
 WORKDIR /var/www/html
 
-# Copy custom php.ini if present
 COPY ./php.ini /usr/local/etc/php/conf.d/custom.ini

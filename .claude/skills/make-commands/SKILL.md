@@ -14,6 +14,7 @@ for the live list; this file explains what each group does and when to reach for
 
 | Command | What it does |
 |---|---|
+| `make build` | `docker compose build --pull`: rebuilds the `php` image after editing `php/Dockerfile` (then `make up` recreates the container) |
 | `make up` | `docker compose up -d`, then prints the local URL |
 | `make down` | Stops and removes containers (keeps the `db_data` volume) |
 | `make restart` | Restarts all containers, prints the local URL |
@@ -65,6 +66,7 @@ has no bash).
 
 | Command | What it does |
 |---|---|
+| `make prod-build` | Rebuilds the production images (`php`, plus `backup` when `BACKUP_SCHEDULER=container`); then `make prod-up` |
 | `make prod-up` | Brings up `docker-compose.yml` + `docker-compose.prod.yml` (adds `cloudflared`, swaps nginx to `nginx/production.conf`). Refuses to run if `CLOUDFLARE_TUNNEL_TOKEN` isn't set in `.env`. |
 | `make prod-down` | Stops the production stack |
 | `make prod-restart` | Restarts the production stack |

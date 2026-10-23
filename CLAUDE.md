@@ -4,7 +4,7 @@ Project context for Claude Code when working in this repository.
 
 ## What this repo is
 
-A **template/boilerplate** for a WordPress development stack — Nginx + PHP 8.3-FPM + MariaDB,
+A **template/boilerplate** for a WordPress development stack — Nginx + PHP 8.4-FPM + MariaDB,
 orchestrated with Docker Compose. It is not itself a live WordPress site: cloning it (or
 downloading a release ZIP) and running `./setup.sh` turns it into a fresh project. Beyond local
 dev, it also covers going to production self-hosted via a Cloudflare Zero Trust Tunnel and
@@ -17,7 +17,7 @@ Three services in `docker-compose.yml`, no explicit network (default Compose net
 | Service | Image                  | Role                                            |
 |---------|------------------------|--------------------------------------------------|
 | `nginx` | `nginx:latest`         | Web server, bound to `127.0.0.1:${NGINX_PORT}`, proxies PHP to `php:9000` |
-| `php`   | built from `php/Dockerfile` (`php:8.3-fpm` + WP-CLI + gd/imagick/intl/etc.) | Runs as host `${UID}:${GID}` so bind-mounted files keep host ownership |
+| `php`   | built from `php/Dockerfile` (`php:8.4-fpm` + WP-CLI + gd/imagick/intl/etc., extensions via `install-php-extensions`) | Runs as host `${UID}:${GID}` so bind-mounted files keep host ownership |
 | `db`    | `mariadb:lts`          | Data in the named volume `db_data` (survives restarts, wiped only by `make nuke`) |
 
 `docker-compose.prod.yml` adds two more services on top of the above: `cloudflared` (see
@@ -85,6 +85,7 @@ Bind mounts: `./public_html` → `/var/www/html` (nginx + php), `./logs` → ngi
 1. `./setup.sh` — interactive: writes `.env`, downloads WordPress into `public_html/`, wires up
    `.gitignore` and the FTP `deploy.yml` template, optionally builds and starts the stack.
 2. Day to day: `make up` / `make down` / `make logs` / `make shell-php` / `make wp-cli CMD="..."`.
+   After editing `php/Dockerfile`: `make build` then `make up` (production: `make prod-build` then `make prod-up`).
 3. Full command reference: use the **make-commands** skill, or `make help`.
 
 ## Two distinct "production" paths — don't conflate them

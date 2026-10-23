@@ -1,7 +1,7 @@
-.PHONY: help up down restart logs shell-php shell-db shell-nginx status ps \
+.PHONY: help build up down restart logs shell-php shell-db shell-nginx status ps \
 		env-encrypt env-decrypt wp-cli db-backup db-restore clean nuke \
 		backup backup-db backup-files backup-restore backup-list backup-list-remote \
-		prod-up prod-down prod-restart prod-logs prod-ps
+		prod-build prod-up prod-down prod-restart prod-logs prod-ps
 
 SHELL := /bin/bash
 
@@ -24,6 +24,9 @@ help: ## Show this help message
 	@echo ""
 
 # ─── Containers ────────────────────────────────────────────────────────────────
+build: ## Rebuild images (after changing php/Dockerfile), then run make up
+	$(COMPOSE) build --pull
+
 up: ## Start containers in background
 	$(COMPOSE) up -d
 	@echo "Open browser at: http://localhost:$(NGINX_PORT)"
@@ -148,6 +151,9 @@ nuke: ## ⚠️  Remove containers, volumes (db), built PHP image, and logs — 
 # ─── Production (Cloudflare Tunnel) ──────────────────────────────────────────
 PROD_COMPOSE   := $(COMPOSE) -f docker-compose.yml -f docker-compose.prod.yml
 BACKUP_PROFILE := $(if $(filter container,$(BACKUP_SCHEDULER)),--profile backup,)
+
+prod-build: ## Rebuild production images (php, backup), then run make prod-up
+	$(PROD_COMPOSE) $(BACKUP_PROFILE) build --pull
 
 prod-up: ## Start the production stack (hardened Nginx + Cloudflare Tunnel)
 	@test -n "$(CLOUDFLARE_TUNNEL_TOKEN)" || (echo "Set CLOUDFLARE_TUNNEL_TOKEN in .env first — see the production-release skill." && exit 1)

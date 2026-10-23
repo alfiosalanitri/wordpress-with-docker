@@ -242,6 +242,7 @@ http://localhost:${NGINX_PORT}
 
 \`\`\`bash
 make help         # complete list of commands
+make build        # rebuild images after changing php/Dockerfile
 make up           # start containers
 make down         # stop containers
 make logs         # follow logs of all services
